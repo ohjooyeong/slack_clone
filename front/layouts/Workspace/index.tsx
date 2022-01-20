@@ -1,4 +1,4 @@
-import React, { FC, useCallback } from 'react';
+import React, { FC, useCallback, useState } from 'react';
 import fetcher from '@utils/fetcher';
 import axios from 'axios';
 import { Navigate } from 'react-router-dom';
@@ -20,8 +20,10 @@ import {
   Workspaces,
   WorkspaceWrapper,
 } from './styles';
+import Menu from '@components/Menu';
 
 const Workspace: FC = ({ children }) => {
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const { data, error, mutate } = useSWR('http://localhost:3095/api/users', fetcher, {
     dedupingInterval: 3000,
   });
@@ -36,7 +38,12 @@ const Workspace: FC = ({ children }) => {
       });
   }, []);
 
-  if (data === undefined) {
+  const onClickUserProfile = useCallback((e) => {
+    e.stopPropagation();
+    setShowUserMenu((prev) => !prev);
+  }, []);
+
+  if (!data) {
     return <Navigate to={'/login'}></Navigate>;
   }
 
@@ -44,21 +51,32 @@ const Workspace: FC = ({ children }) => {
     <>
       <Header>
         <RightMenu>
-          <span>
+          <span onClick={onClickUserProfile}>
             <ProfileImg src={gravatar.url(data.email, { s: '28px', d: 'retro' })} alt={data.nickname} />
+            {showUserMenu && (
+              <Menu style={{ right: 0, top: 38 }} show={showUserMenu} onCloseModal={onClickUserProfile}>
+                <ProfileModal>
+                  <img src={gravatar.url(data.email, { s: '36px', d: 'retro' })} alt={data.nickname} />
+                  <div>
+                    <span id="profile-name">{data.nickname}</span>
+                    <span id="profile-active">Active</span>
+                  </div>
+                </ProfileModal>
+                <LogOutButton onClick={onLogout}>로그아웃</LogOutButton>
+              </Menu>
+            )}
           </span>
         </RightMenu>
       </Header>
-      <button onClick={onLogout}>로그아웃</button>
+
       <WorkspaceWrapper>
         <Workspaces>test</Workspaces>
         <Channels>
           <WorkspaceName>Sleact</WorkspaceName>
           <MenuScroll></MenuScroll>
         </Channels>
-        <Chats>Chat</Chats>
+        <Chats>{children}</Chats>
       </WorkspaceWrapper>
-      {children}
     </>
   );
 };
