@@ -1,7 +1,7 @@
 import React, { FC, useCallback, useState } from 'react';
 import fetcher from '@utils/fetcher';
 import axios from 'axios';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, Outlet } from 'react-router-dom';
 import useSWR from 'swr';
 import gravatar from 'gravatar';
 import {
@@ -21,12 +21,13 @@ import {
   WorkspaceWrapper,
 } from './styles';
 import Menu from '@components/Menu';
-import { IUser } from '@typings/db';
+import { IUser, IChannel } from '@typings/db';
 import Modal from '@components/Modal';
 import { Button, Input, Label } from '@pages/SignUp/styles';
 import useInput from '@hooks/useInput';
 import { toast } from 'react-toastify';
 import CreateChannelModal from '@components/CreateChannelModal';
+import { useParams } from 'react-router';
 
 const Workspace: FC = ({ children }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -35,6 +36,7 @@ const Workspace: FC = ({ children }) => {
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
   const [newWorkspace, onChangeNewWorkspace, setNewWorkspace] = useInput('');
   const [newUrl, onChangeNewUrl, setNewUrl] = useInput('');
+  const { workspace } = useParams<{ workspace: string }>();
   const {
     data: userData,
     error,
@@ -42,6 +44,13 @@ const Workspace: FC = ({ children }) => {
   } = useSWR<IUser | false>('http://localhost:3095/api/users', fetcher, {
     dedupingInterval: 3000,
   });
+  const { data: channelData } = useSWR<IChannel[]>(
+    userData ? `http://localhost:3095/api/workspaces/${workspace}/channels` : null,
+    fetcher,
+    {
+      dedupingInterval: 3000,
+    },
+  );
 
   const onLogout = useCallback(() => {
     axios
@@ -153,9 +162,14 @@ const Workspace: FC = ({ children }) => {
                 <button onClick={onLogout}>로그아웃</button>
               </WorkspaceModal>
             </Menu>
+            {channelData?.map((v, i) => (
+              <div key={v.id + i}>{v.name}</div>
+            ))}
           </MenuScroll>
         </Channels>
-        <Chats>{children}</Chats>
+        <Chats>
+          <Outlet />
+        </Chats>
       </WorkspaceWrapper>
       <Modal show={showCreateWorkspaceModal} onCloseModal={onCloseModal}>
         <form onSubmit={onCreateWorkspace}>
@@ -170,7 +184,11 @@ const Workspace: FC = ({ children }) => {
           <Button type="submit">생성하기</Button>
         </form>
       </Modal>
-      <CreateChannelModal show={showCreateChannelModal} onCloseModal={onCloseModal}></CreateChannelModal>
+      <CreateChannelModal
+        show={showCreateChannelModal}
+        onCloseModal={onCloseModal}
+        setShowCreateChannelModal={setShowCreateChannelModal}
+      ></CreateChannelModal>
     </>
   );
 };
