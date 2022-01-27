@@ -21,12 +21,12 @@ const InviteWorkspaceModal: FC<Props> = ({ show, onCloseModal, setShowInviteWork
     data: userData,
     error,
     mutate,
-  } = useSWR<IUser | false>('http://localhost:3095/api/users', fetcher, {
+  } = useSWR<IUser | false>('/api/users', fetcher, {
     dedupingInterval: 3000,
   });
 
   const { mutate: mutateMember } = useSWR<IChannel[]>(
-    userData ? `http://localhost:3095/api/workspaces/${workspace}/members` : null,
+    userData ? `/api/workspaces/${workspace}/members` : null,
     fetcher,
     {
       dedupingInterval: 3000,
@@ -40,7 +40,7 @@ const InviteWorkspaceModal: FC<Props> = ({ show, onCloseModal, setShowInviteWork
         return;
       }
       axios
-        .post(`http://localhost:3095/api/workspaces/${workspace}/members`, {
+        .post(`/api/workspaces/${workspace}/members`, {
           email: newMember,
         })
         .then(() => {
